@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hava Durumu</title>
+  <link rel="stylesheet" href="./style/main.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">
+      <img src="assets/logo.svg" alt="logo" />
+      <h2>Çiftçi Paneli</h2>
+    </div>
+    <nav>
+      <a href="index.html">🏠 Anasayfa</a>
+      <a href="weather.html">☁️ Hava Durumu</a>
+      <a href="about.html">ℹ️ Hakkında</a>
+      <a href="login.html">🔐 Giriş</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <section class="hero">
+      <div class="overlay-text" style="position: static; background: none; color: #2f4f30;">
+        <h1>Hava Durumu & Tahmin</h1>
+        <p>Gerçek zamanlı şehir ve mahsul uyumluluğunu görüntüleyin</p>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <label for="il"><strong>Şehir:</strong></label>
+        <select id="il">
+          <option value="İstanbul">İstanbul</option>
+          <option value="Ankara">Ankara</option>
+          <option value="Konya">Konya</option>
+          <option value="Adana">Adana</option>
+        </select>
+
+        <label for="mahsul"><strong>Mahsul:</strong></label>
+        <select id="mahsul">
+          <option value="Buğday">Buğday</option>
+          <option value="Domates">Domates</option>
+          <option value="Mısır">Mısır</option>
+          <option value="Patates">Patates</option>
+        </select>
+
+        <button onclick="getWeatherAndPrediction()"class="btn-data" >Verileri Getir</button>
+      </div>
+
+      <div id="weather-result" style="
+          margin-top: 30px;
+          background: #fff;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          color: #2c3e50;
+        "></div>
+    </section>
+    <script src="js/app.js"></script>
+  </main>
+
+  
+</body>
+</html>
