@@ -1,21 +1,693 @@
-<select id="mahsulSelect">
-    <option>Yükleniyor...</option>
-</select>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Tarım Asistanı</title>
+    <!-- Tailwind CSS CDN kaldırıldı, custom CSS kullanılıyor -->
+    <style>
+        /* Genel Stil Ayarları */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<script>
-    fetch('/api/mahsuller')
-        .then(response => response.json())
-        .then(data => {
-            const select = document.getElementById('mahsulSelect');
-            select.innerHTML = ''; // Temizle
-            data.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item.id;
-                opt.textContent = item.mahsulAdi;
-                select.appendChild(opt);
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Mor-mavi gradient */
+            min-height: 100vh;
+            padding: 20px;
+            display: flex; /* İçeriği dikeyde ortalamak için */
+            justify-content: center;
+            align-items: flex-start; /* İçeriği üste hizala */
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr; /* Tek sütun varsayılan */
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 1fr 2fr; /* Tablet ve masaüstünde iki sütun */
+            }
+        }
+
+        /* Başlık Stilleri */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            grid-column: 1 / -1; /* Tüm sütunları kapla */
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Kart Stilleri (Form ve Sonuçlar) */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Form Elemanları Stilleri */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #333;
+            background-color: #f8f9fa; /* Hafif arka plan */
+        }
+
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Buton Stilleri */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%; /* Tam genişlik */
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Sonuç Kartı Stilleri */
+        .result-card {
+            background: #f8f9fa;
+            border-left: 4px solid #28a745; /* Yeşil kenarlık */
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            display: none; /* Varsayılan olarak gizli */
+        }
+
+        .result-card h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* Hava Durumu Bilgisi Stili */
+        .weather-info {
+            background: #e3f2fd; /* Açık mavi */
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #bbdefb;
+            color: #1a202c;
+        }
+
+        /* Öneri ve Mahsul Kartları Gridi */
+        .crop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .crop-card {
+            background-color: #ffffff; /* Beyaz */
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .crop-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .crop-card h3 {
+            font-size: 1.4rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .crop-score {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 15px 0;
+            line-height: 1; /* Satır yüksekliğini ayarla */
+        }
+
+        .crop-details {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #555;
+            text-align: left;
+            padding: 0 10px;
+        }
+        .crop-details strong {
+            color: #333;
+        }
+
+        .advice-section {
+            background: #e6ffed; /* Açık yeşil */
+            border: 1px solid #b2f5ea;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .advice-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        .advice-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .advice-section ul li {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            color: #4a5568;
+        }
+        .advice-section ul li::before {
+            content: '•';
+            color: #38a169;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+
+
+        /* Yükleme ve Hata Mesajı Stilleri */
+        .loading, .error-message {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+        
+        .loading {
+            background-color: #e0f7fa; /* Açık cam göbeği */
+            color: #00796b;
+            display: none; /* Varsayılan olarak gizli */
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background-color: #ffebee; /* Açık kırmızı */
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+            display: none; /* Varsayılan olarak gizli */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌾 Akıllı Tarım Asistanı</h1>
+            <p>Gerçek zamanlı hava durumu verileriyle mahsul verimi analizi</p>
+        </div>
+
+        <!-- Input Form -->
+        <div class="card">
+            <h2>Tarım Analizi Başlat</h2>
+            <div id="error-message" class="error-message"></div>
+            
+            <div class="form-group">
+                <label for="city">Şehir:</label>
+                <select id="city" required>
+                    <!-- Şehirler JS ile doldurulacak -->
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="crop">Mahsul:</label>
+                <select id="crop" required>
+                    <!-- Mahsuller JS ile doldurulacak -->
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="soilType">Toprak Tipi:</label>
+                <select id="soilType" required>
+                    <!-- Toprak tipleri JS ile doldurulacak -->
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="areaInput">Alan (Dönüm):</label>
+                <input type="number" id="areaInput" value="10" min="1" required>
+            </div>
+
+            <button class="btn" onclick="getRecommendation()">
+                Analizi Başlat
+            </button>
+        </div>
+
+        <!-- Yükleniyor Durumu -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Veriler yükleniyor ve analiz ediliyor...</p>
+        </div>
+
+        <!-- Recommendations Display -->
+        <div id="resultCard" class="result-card">
+            <h2>📊 Analiz Sonuçları</h2>
+            <div id="results">
+                <p>Yukarıdaki formu doldurarak analiz başlatın ve AI destekli mahsul önerilerini burada görün.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // OpenWeatherMap API Anahtarınız Buraya Girin (Sağlanan bilgiden güncellendi)
+        const OPENWEATHERMAP_API_KEY = 'e4b7070abab1899610fd58316c8d4c53'; 
+
+        // Mahsullerin optimal koşulları (Python modelindeki sentetik veri oluşturma mantığına yakın)
+        const cropOptimalConditions = {
+            'Buğday': { temp: { min: 15, max: 25 }, hum: { min: 40, max: 70 }, rain: 'Orta' },
+            'Arpa': { temp: { min: 12, max: 22 }, hum: { min: 35, max: 65 }, rain: 'Orta' },
+            'Mısır': { temp: { min: 20, max: 30 }, hum: { min: 50, max: 80 }, rain: 'Yüksek' },
+            'Domates': { temp: { min: 18, max: 28 }, hum: { min: 60, max: 80 }, rain: 'Yüksek' },
+            'Patlıcan': { temp: { min: 22, max: 32 }, hum: { min: 65, max: 85 }, rain: 'Yüksek' },
+            'Salatalık': { temp: { min: 18, max: 28 }, hum: { min: 70, max: 90 }, rain: 'Yüksek' },
+            'Kabak': { temp: { min: 20, max: 30 }, hum: { min: 60, max: 80 }, rain: 'Yüksek' },
+            'Soğan': { temp: { min: 12, max: 25 }, hum: { min: 50, max: 70 }, rain: 'Düşük-Orta' },
+            'Sarımsak': { temp: { min: 10, max: 20 }, hum: { min: 45, max: 65 }, rain: 'Düşük-Orta' },
+            'Havuç': { temp: { min: 15, max: 25 }, hum: { min: 60, max: 80 }, rain: 'Orta' },
+            'Lahana': { temp: { min: 10, max: 20 }, hum: { min: 70, max: 90 }, rain: 'Yüksek' },
+            'Marul': { temp: { min: 10, max: 22 }, hum: { min: 65, max: 85 }, rain: 'Orta' },
+            'Elma': { temp: { min: 10, max: 25 }, hum: { min: 60, max: 80 }, rain: 'Orta' },
+            'Armut': { temp: { min: 12, max: 26 }, hum: { min: 60, max: 80 }, rain: 'Orta' },
+            'Kiraz': { temp: { min: 8, max: 22 }, hum: { min: 55, max: 75 }, rain: 'Düşük' },
+            'Vişne': { temp: { min: 8, max: 22 }, hum: { min: 55, max: 75 }, rain: 'Düşük' },
+            'Şeftali': { temp: { min: 15, max: 28 }, hum: { min: 60, max: 80 }, rain: 'Orta' },
+            'Kayısı': { temp: { min: 15, max: 30 }, hum: { min: 50, max: 70 }, rain: 'Düşük' },
+            'Üzüm': { temp: { min: 15, max: 30 }, hum: { min: 50, max: 70 }, rain: 'Düşük' },
+            'İncir': { temp: { min: 18, max: 32 }, hum: { min: 55, max: 75 }, rain: 'Düşük' },
+            'Nar': { temp: { min: 15, max: 30 }, hum: { min: 50, max: 70 }, rain: 'Düşük' },
+            'Ayva': { temp: { min: 10, max: 25 }, hum: { min: 60, max: 80 }, rain: 'Orta' },
+            'Pamuk': { temp: { min: 22, max: 32 }, hum: { min: 45, max: 75 }, rain: 'Orta' },
+            'Ayçiçeği': { temp: { min: 18, max: 28 }, hum: { min: 50, max: 70 }, rain: 'Orta' },
+            'Şekerpancarı': { temp: { min: 15, max: 25 }, hum: { min: 65, max: 85 }, rain: 'Yüksek' },
+            'Tütün': { temp: { min: 20, max: 30 }, hum: { min: 70, max: 90 }, rain: 'Yüksek' },
+            'Susam': { temp: { min: 25, max: 35 }, hum: { min: 40, max: 60 }, rain: 'Düşük' },
+            'Zeytin': { temp: { min: 15, max: 25 }, hum: { min: 50, max: 70 }, rain: 'Düşük-Orta' },
+            'Çay': { temp: { min: 18, max: 25 }, hum: { min: 70, max: 90 }, rain: 'Çok Yüksek' },
+            'Fındık': { temp: { min: 13, max: 20 }, hum: { min: 65, max: 85 }, rain: 'Yüksek' },
+            'Ceviz': { temp: { min: 10, max: 25 }, hum: { min: 60, max: 80 }, rain: 'Orta' },
+            'Badem': { temp: { min: 15, max: 30 }, hum: { min: 45, max: 65 }, rain: 'Düşük' },
+            'Antepfıstığı': { temp: { min: 18, max: 32 }, hum: { min: 40, max: 60 }, rain: 'Düşük' },
+            'Nohut': { temp: { min: 15, max: 25 }, hum: { min: 45, max: 65 }, rain: 'Düşük-Orta' },
+            'Mercimek': { temp: { min: 12, max: 22 }, hum: { min: 40, max: 60 }, rain: 'Düşük-Orta' },
+            'Fasulye': { temp: { min: 18, max: 28 }, hum: { min: 60, max: 80 }, rain: 'Orta' },
+            'Börülce': { temp: { min: 20, max: 30 }, hum: { min: 55, max: 75 }, rain: 'Orta' }
+        };
+
+
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        async function initApp() {
+            showLoading(true); // Sayfa yüklenirken yükleniyor göster
+            try {
+                console.log('Attempting to fetch options from Flask API...'); // Added log
+                // Flask API'den seçenekleri çek
+                const response = await fetch('http://localhost:5000/options', { mode: 'cors' });
+                console.log('Fetch response received:', response); // Added log
+                if (!response.ok) {
+                    // HTTP durumu 2xx aralığında değilse hata fırlat
+                    const errorText = await response.text();
+                    throw new Error(`API seçenekleri yüklenemedi: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                const data = await response.json();
+                console.log('Options data received:', data); // Added log
+
+                populateSelect('city', data.cities); // Yeni HTML'deki 'city' ID'si
+                populateSelect('crop', data.crops);   // Yeni HTML'deki 'crop' ID'si
+                populateSelect('soilType', data.soil_types); // Yeni HTML'deki 'soilType' ID'si
+                
+                // Varsayılan şehri Diyarbakır olarak ayarla (eğer varsa)
+                const citySelect = document.getElementById('city');
+                if (data.cities.includes('Diyarbakır')) {
+                    citySelect.value = 'Diyarbakır';
+                }
+
+            } catch (error) {
+                console.error('Uygulama başlatılırken hata oluştu:', error);
+                let errorMessage = 'Uygulama seçenekleri yüklenemedi. ';
+                if (error instanceof TypeError && error.message === 'Failed to fetch') {
+                    errorMessage += 'Bu genellikle Flask API sunucusunun çalışmıyor veya erişilemiyor olmasından kaynaklanır. Lütfen VS Code terminalinizde `python app.py` komutunu çalıştırdığınızdan ve uygulamanın hatasız çalıştığından emin olun.';
+                } else {
+                    errorMessage += `Hata: ${error.message}.`;
+                }
+                showError(errorMessage);
+            } finally {
+                showLoading(false); // Yükleme bitti, gizle
+            }
+        }
+
+        function populateSelect(selectId, items) {
+            const selectElement = document.getElementById(selectId);
+            selectElement.innerHTML = ''; // Önceki seçenekleri temizle
+            // İlk seçenek olarak "Seçim yapın..." ekle
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = `${selectId === 'city' ? 'Şehir' : selectId === 'crop' ? 'Mahsul' : 'Toprak Tipi'} seçin...`;
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            selectElement.appendChild(defaultOption);
+
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                selectElement.appendChild(option);
             });
-        })
-        .catch(error => {
-            console.error('Veri yüklenemedi:', error);
-        });
-</script>
+        }
+
+        async function getRecommendation() { 
+            hideError(); 
+            showLoading(true); 
+            document.getElementById('resultCard').style.display = 'none'; 
+
+            const city = document.getElementById('city').value;
+            const crop = document.getElementById('crop').value; 
+            const soilType = document.getElementById('soilType').value;
+            const area = parseFloat(document.getElementById('areaInput').value);
+
+            if (!city || !crop || !soilType || isNaN(area) || area <= 0) {
+                showError('Lütfen tüm alanları doldurun ve geçerli bir alan değeri girin.');
+                showLoading(false);
+                return;
+            }
+
+            try {
+                // Adım 1: Hava durumu verilerini OpenWeatherMap API'sinden çek
+                console.log('Attempting to fetch weather data for:', city); // Added log
+                const weather = await fetchWeatherData(city);
+                console.log('Weather data received:', weather); // Added log
+                
+                // Adım 2: Flask API'ye tekil tahmin isteği gönder
+                console.log('Attempting to fetch prediction from Flask API...'); // Added log
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        city: city,
+                        crop: crop, 
+                        soil_type: soilType,
+                        temperature: weather.temp,
+                        humidity: weather.humidity,
+                        rainfall: weather.rainfall
+                    }),
+                    mode: 'cors' 
+                });
+                console.log('Prediction fetch response received:', response); // Added log
+                
+                if (!response.ok) {
+                    const errorData = await response.json(); 
+                    throw new Error(`Model tahmini alınamadı: ${response.status} ${response.statusText} - ${errorData.error || 'Bilinmeyen bir hata oluştu.'}`);
+                }
+
+                const data = await response.json();
+                console.log('Prediction data received:', data); // Added log
+                
+                if (data.success) {
+                    // Tahmin skoru ve hava durumu bilgilerini kullanarak tavsiyeleri al
+                    const adviceList = getTemperatureBasedAdvice(crop, weather.temp, weather.humidity, weather.rainfall);
+                    displaySinglePrediction(data.yield_score, crop, area, weather, soilType, city, adviceList);
+                } else {
+                    showError('Model tahmini alınamadı: ' + (data.error || 'API\'den beklenmeyen bir yanıt geldi.'));
+                }
+                
+            } catch (error) {
+                console.error('Analiz hatası:', error);
+                let errorMessage = 'Analiz sırasında bir hata oluştu. ';
+                 if (error instanceof TypeError && error.message === 'Failed to fetch') {
+                    errorMessage += 'Bu genellikle Flask API sunucusunun çalışmıyor veya erişilemiyor olmasından kaynaklanır. Lütfen VS Code terminalinizde `python app.py` komutunu çalıştırdığınızdan ve uygulamanın hatasız çalıştığından emin olun.';
+                } else {
+                    errorMessage += `Hata: ${error.message}. Lütfen konsolu kontrol edin.`;
+                }
+                showError(errorMessage);
+            } finally {
+                showLoading(false); 
+            }
+        }
+
+        async function fetchWeatherData(city) {
+            // API anahtarının boş olup olmadığını kontrol et
+            if (OPENWEATHERMAP_API_KEY === 'YOUR_OPENWEATHERMAP_API_KEY' || !OPENWEATHERMAP_API_KEY) {
+                throw new Error('OpenWeatherMap API anahtarı ayarlanmadı. Lütfen `index.html` dosyasındaki `OPENWEATHERMAP_API_KEY` değerini kendi anahtarınızla güncelleyin.');
+            }
+
+            // OpenWeatherMap Current Weather API URL'si
+            // Dinamik şehir, metrik birimler ve Türkçe dil kullanılıyor.
+            const weatherApiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city},TR&units=metric&lang=tr&appid=${OPENWEATHERMAP_API_KEY}`;
+
+            try {
+                const response = await fetch(weatherApiUrl);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Hava durumu verisi alınamadı: ${errorData.message || response.statusText}`);
+                }
+                const data = await response.json();
+
+                const temperature = data.main.temp;
+                const humidity = data.main.humidity;
+                // OpenWeatherMap API'sinden anlık yağış (mm) genellikle 'rain' objesi içinde '1h' veya '3h' olarak gelir.
+                // Eğer yoksa 0 kabul ediyoruz.
+                const rainfall = data.rain ? (data.rain['1h'] || data.rain['3h'] || 0) : 0; 
+
+                return {
+                    temp: temperature,
+                    humidity: humidity,
+                    rainfall: rainfall
+                };
+            } catch (error) {
+                console.error('Hava durumu API hatası:', error);
+                let errorMessage = `Hava durumu verisi alınırken bir hata oluştu: ${error.message}. `;
+                if (error.message.includes('401')) {
+                    errorMessage += 'Muhtemelen OpenWeatherMap API anahtarınız geçersiz veya ayarlanmamış.';
+                } else if (error.message.includes('404')) {
+                    errorMessage += 'Şehir bulunamadı veya yazım yanlışı olabilir.';
+                }
+                showError(errorMessage + ' Varsayılan değerler kullanılıyor.');
+                return {
+                    temp: 20,    
+                    humidity: 60, 
+                    rainfall: 45 
+                };
+            }
+        }
+
+        function getTemperatureBasedAdvice(cropName, currentTemp, currentHumidity, currentRainfall) {
+            const advice = [];
+            const cropInfo = cropOptimalConditions[cropName];
+
+            if (!cropInfo) {
+                advice.push(`Genel tarım tavsiyesi: "${cropName}" mahsulü için özel bilgi bulunamadı.`);
+                return advice;
+            }
+
+            const { temp: optimalTemp, hum: optimalHum, rain: waterNeedCategory } = cropInfo;
+
+            // Sıcaklık bazlı tavsiyeler
+            if (currentTemp < optimalTemp.min - 5) {
+                advice.push(`🌡️ Hava çok soğuk (${currentTemp}°C). Bu sıcaklık "${cropName}" için uygun değil. Don riskine karşı önlem alın veya erken ekimden kaçının.`);
+            } else if (currentTemp < optimalTemp.min) {
+                advice.push(`🌡️ Hava "${cropName}" için biraz serin (${currentTemp}°C). Bitki gelişimini yavaşlatabilir. Gerekirse serinlik toleransı olan çeşitleri düşünün veya koruma sağlayın.`);
+            } else if (currentTemp > optimalTemp.max + 5) {
+                advice.push(`🔥 Hava çok sıcak (${currentTemp}°C). Bu durum "${cropName}" için stres yaratabilir. Aşırı sıcaklara karşı gölgeleme veya sulama sıklığını artırma gibi önlemler alın.`);
+            } else if (currentTemp > optimalTemp.max) {
+                advice.push(`☀️ Hava "${currentTemp}°C) "${cropName}" için biraz sıcak. Düzenli sulama ve bitkileri stresten koruma önemlidir.`);
+            } else {
+                advice.push(`✅ Sıcaklık (${currentTemp}°C) "${cropName}" için ideal aralıkta. Optimum gelişim beklenir.`);
+            }
+
+            // Nem bazlı tavsiyeler
+            if (currentHumidity < optimalHum.min - 10) {
+                advice.push(`💧 Nem oranı (${currentHumidity}%) düşük. Kuraklık stresi oluşabilir. Sulama sıklığını ve miktarını artırmayı düşünün.`);
+            } else if (currentHumidity > optimalHum.max + 10) {
+                advice.push(`💦 Nem oranı (${currentHumidity}%) çok yüksek. Fungal hastalık riskine karşı bitkileri gözlemleyin ve iyi havalandırma sağlayın.`);
+            } else if (currentHumidity >= optimalHum.min && currentHumidity <= optimalHum.max) {
+                 advice.push(`💧 Nem oranı (${currentHumidity}%) "${cropName}" için uygun seviyelerde.`);
+            }
+
+            // Yağış bazlı tavsiyeler (Bu kısım için OpenWeatherMap'ten anlık yağış verisi gelmese bile genel bir mantık yürütülebilir)
+            if (waterNeedCategory === 'Çok Yüksek' && currentRainfall < 10) { // Örn: Çay
+                advice.push(`🌧️ "${cropName}" çok yüksek su ihtiyacına sahip. Mevcut yağış (${currentRainfall}mm) yetersiz. Yoğun sulama planlaması yapın.`);
+            } else if (waterNeedCategory === 'Yüksek' && currentRainfall < 5) {
+                advice.push(`🌧️ "${cropName}" yüksek su ihtiyacına sahip. Mevcut yağış (${currentRainfall}mm) yetersiz. Düzenli sulama önemlidir.`);
+            } else if (waterNeedCategory === 'Düşük' && currentRainfall > 30) { // Aşırı yağış
+                advice.push(`☔ "${cropName}" düşük su ihtiyacına sahip. Aşırı yağış (${currentRainfall}mm) kök çürümesine yol açabilir. Drenajı kontrol edin.`);
+            } else if (currentRainfall > 0) {
+                advice.push(`💧 Mevcut yağış (${currentRainfall}mm) toprağın nem dengesine katkıda bulunuyor. Sulama ihtiyacınızı buna göre ayarlayın.`);
+            } else {
+                advice.push(`☀️ Yağış yok. Toprak nemini kontrol edin ve "${cropName}" için düzenli sulama yapmayı unutmayın.`);
+            }
+
+            // Genel tavsiyeler (her zaman gösterilebilir veya duruma göre)
+            advice.push("🔍 Bitkilerinizi düzenli olarak hastalık ve zararlılar için kontrol edin.");
+            advice.push("🌱 Toprak analizi yaparak besin eksikliklerini belirleyin ve gübreleme yapın.");
+
+            return advice;
+        }
+
+        function displaySinglePrediction(score, crop, area, weather, soilType, city, adviceList) {
+            const resultsDiv = document.getElementById('results');
+            document.getElementById('resultCard').style.display = 'block'; 
+            
+            // Skor rengini belirle
+            let scoreColor = '#e74c3c'; 
+            if (score >= 80) scoreColor = '#27ae60'; 
+            else if (score >= 60) scoreColor = '#f39c12'; 
+            else if (score >= 40) scoreColor = '#e67e22'; 
+            
+            // Ekonomik bilgiler (basitleştirilmiş ve örnek değerler)
+            const estimatedYieldPerDönüm = (score / 100) * 0.5; 
+            const estimatedTotalYield = estimatedYieldPerDönüm * area; 
+            const averagePricePerTon = 8000; 
+            const estimatedRevenue = estimatedTotalYield * averagePricePerTon; 
+            
+            let adviceHtml = adviceList.map(tip => `<li>${tip}</li>`).join('');
+
+            resultsDiv.innerHTML = `
+                <div class="weather-info">
+                    <h3>🌤️ ${city} Hava Durumu</h3>
+                    <p><strong>Sıcaklık:</strong> ${weather.temp}°C</p>
+                    <p><strong>Nem:</strong> ${weather.humidity}%</p>
+                    <p><strong>Yağış:</strong> ${weather.rainfall}mm</p>
+                </div>
+
+                <div class="crop-card">
+                    <h3>🌾 ${crop}</h3>
+                    <div class="crop-score" style="color: ${scoreColor}">
+                        ${score.toFixed(1)}/100
+                    </div>
+                    <div class="crop-details">
+                        <strong>Uygunluk:</strong> ${getScoreDescription(score)}<br>
+                        <strong>Toprak Tipi:</strong> ${soilType}<br>
+                        <strong>Tahmini Verim (${area} Dönüm):</strong> ${estimatedTotalYield.toFixed(1)} ton<br>
+                        <strong>Tahmini Gelir:</strong> ₺${estimatedRevenue.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </div>
+                </div>
+
+                <div class="advice-section">
+                    <h3>💡 Güncel Hava Durumuna Göre Tarımsal Tavsiyeler:</h3>
+                    <ul>
+                        ${adviceHtml}
+                    </ul>
+                </div>
+            `;
+        }
+
+
+        function getScoreDescription(score) {
+            if (score >= 90) return 'Mükemmel 🌟';
+            if (score >= 80) return 'Çok İyi 🟢';
+            if (score >= 70) return 'İyi 🟡';
+            if (score >= 60) return 'Orta 🟠';
+            if (score >= 50) return 'Zor 🔴';
+            return 'Uygun Değil ❌';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.style.display = 'none';
+        }
+
+        function showLoading(isLoading) {
+            const loadingDiv = document.getElementById('loading');
+            const button = document.querySelector('.btn');
+            if (isLoading) {
+                loadingDiv.style.display = 'block';
+                button.disabled = true; 
+            } else {
+                loadingDiv.style.display = 'none';
+                button.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
